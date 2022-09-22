@@ -1,0 +1,77 @@
+~var:main {
+
+          asm~ str: db "%s", 10, 0
+
+          string~ test = 'test'
+
+          string~ sock_error = 'ERROR:: could not create socket'
+
+          int~ REUSED_ENABLED = 1
+
+          int~ AF_INET = 2
+          int~ SO_REUSE = 2
+          int~ SOCK_STRE = 1
+          int~ SOL_SOCK = 1
+          int~ SOCK_NONBL = 2048
+
+          asm~ section .bss
+          asm~ server_sock: resq 1
+          asm~ port: resq 1
+
+}
+
+~func:check_res {
+               return~ 0
+}
+
+~func:sock_init {
+
+
+                // socket(AF_INTET, SOCK_STRE, 0)
+                move~ AF_INET, rdi
+                move~ SOCK_STRE, rsi
+                move~ SOCK_NONBL, rsi
+                move~ 0, rdx
+                call~ socket
+                // server_sock = socket ^
+                move~ rax, [server_sock]
+
+                move~ [server_sock], rdi
+                move~ SOL_SOCK, rsi
+                move~ SO_REUSE, rdx
+                move~ REUSED_ENABLED, rcx
+                move~ 4, r8
+                call~ setsockopt
+
+                ~if(rax > 0)
+                    // goto check_res
+                    asm~ ret
+                end
+                ~if(rax < 0)
+                        move~ str, r10
+                        move~ sock_error, r11
+                        call~ util.ret_fail
+                        // return~ 0
+                end
+
+}
+
+~func:main {
+
+           asm~ extern printf
+
+           asm~ extern socket
+           asm~ extern setsockopt
+
+           push~ rbp
+
+           move~ str, r10
+           move~ test, r11
+           call~ util.prints
+
+           call~ sock_init
+           call~ check_res
+
+           return~ 0
+
+}

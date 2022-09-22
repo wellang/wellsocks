@@ -1,0 +1,37 @@
+~func:prints {
+
+       // r10: arg1 - type %s
+       // r11: arg2 - string
+
+
+       ~if(r9 == 0x00)
+            return~ -1
+       end
+       ~if(r10 == 0x00)
+            return~ -1
+       end
+
+       ~if(r9 != 0x00)
+
+            move~ r10, rdi
+            move~ r11, rsi
+            move~ 0, rax
+            call~ printf
+
+       end
+
+}
+
+~func:ret_fail {
+
+          // r10: arg1 - type %s
+          // r11: arg2 - return string
+
+          move~ r10, rdi
+          move~ r11, rsi
+          move~ 0, rax
+          call~ printf
+
+          return~ 0
+
+}
