@@ -1,10 +1,18 @@
 ~var:main {
 
+          asm~ struc sockaddr_in
+          asm~ .sin_family: resw 1
+          asm~ .sin_port: resw 1
+          asm~ .sin_addr: resd 1
+          asm~ .sin_zero: resq 1
+          asm~ endstruc
+
           asm~ str: db "%s", 10, 0
 
           string~ test = 'test'
 
           string~ sock_error = 'ERROR:: could not create socket'
+          string~ bind_error = 'ERROR:: could not bind adress'
 
           int~ REUSED_ENABLED = 1
 
@@ -14,14 +22,69 @@
           int~ SOL_SOCK = 1
           int~ SOCK_NONBL = 2048
 
+          string~ ip_addr = '0.0.0.0'
+          int~ port = 8080
+
+          asm~ server_addr:
+          asm~ istruc sockaddr_in
+          asm~ at sockaddr_in.sin_family, dw 0
+          asm~ at sockaddr_in.sin_port, dw 0
+          asm~ at sockaddr_in.sin_addr, dd 0
+          asm~ at sockaddr_in.sin_zero, dq 0
+          asm~ iend
+
           asm~ section .bss
           asm~ server_sock: resq 1
-          asm~ port: resq 1
 
 }
 
-~func:check_res {
-               return~ 0
+~func:listen_ {
+
+              move~ [server_sock], rdi
+              move~ 50, rsi
+              call~ listen
+
+}
+
+~func:bind_fin {
+
+               ~if(rax == 0)
+                       asm~ ret
+               end
+
+               ~if(rax != 0)
+                       move~ str, r10
+                       move~ bind_error, r11
+                       call~ util.ret_fail
+               end
+
+}
+
+~func:check_res_bind {
+
+                move~ port, rdi
+                call~ htons
+                move~ rax, [server_addr + sockaddr_in.sin_addr]
+
+                move~ ip_addr, rdi
+                move~ server_addr + sockaddr_in.sin_addr, rsi
+                call~ inet_aton
+
+                ~if(rax != 0)
+                        move~ [server_sock], rdi
+                        move~ server_addr, rsi
+                        move~ 16, rdx
+                        call~ bind
+
+                        call~ bind_fin
+                        asm~ ret
+                end
+                ~if(rax == 0)
+                      move~ str, r10
+                      move~ sock_error, r11
+                      call~ util.ret_fail
+                end
+
 }
 
 ~func:sock_init {
@@ -62,6 +125,10 @@
 
            asm~ extern socket
            asm~ extern setsockopt
+           asm~ extern htons
+           asm~ extern inet_aton
+           asm~ extern bind
+           asm~ extern listen
 
            push~ rbp
 
@@ -70,7 +137,7 @@
            call~ util.prints
 
            call~ sock_init
-           call~ check_res
+           call~ check_res_bind
 
            return~ 0
 
