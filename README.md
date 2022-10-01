@@ -1,3 +1,8 @@
+# NOTE THIS IS OLD CONCEPT CODE. THIS IS BEING MOVED TO:
+
+https://github.com/TristanWellman/hoover
+
+
 # WellSocks
 
 ### build & run:
